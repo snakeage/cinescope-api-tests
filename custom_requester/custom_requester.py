@@ -4,7 +4,7 @@ import os
 
 import requests
 
-from constants import HEADERS
+from constants.api_constants import HEADERS
 
 
 class UnexpectedStatusCode(Exception):
@@ -77,6 +77,17 @@ class CustomRequester:
 
         return response
 
+    def get(self, endpoint: str, **kwargs) -> requests.Response:
+        return self.send_request('GET', endpoint, **kwargs)
+
+    def post(self, endpoint: str, **kwargs) -> requests.Response:
+        return self.send_request('POST', endpoint, **kwargs)
+
+    def patch(self, endpoint: str, **kwargs) -> requests.Response:
+        return self.send_request('PATCH', endpoint, **kwargs)
+
+    def delete(self, endpoint: str, **kwargs) -> requests.Response:
+        return self.send_request('DELETE', endpoint, **kwargs)
 
     def log_request_and_response(self, response: requests.Response):
         """

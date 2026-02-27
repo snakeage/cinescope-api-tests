@@ -11,9 +11,9 @@ class ApiManager:
     def __init__(self, session):
         self.session = session
 
-        self.auth_api = AuthApi(session)
-        self.user_api = UserApi(session)
-        self.movies_api = MoviesApi(session)
+        self.auth = AuthApi(session)
+        self.users = UserApi(session)
+        self.movies = MoviesApi(session)
 
     def authenticate(self, user):
         """
@@ -23,8 +23,11 @@ class ApiManager:
             'email': user['email'],
             'password': user['_password'],
         }
-        token = self.auth_api.login_and_get_token(login_data)
+        token = self.auth.login_and_get_token(login_data)
 
         self.session.headers.update({
             'Authorization': f'Bearer {token}'
         })
+
+    def close_session(self):
+        self.session.close()

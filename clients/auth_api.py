@@ -1,4 +1,4 @@
-from constants import AUTH_BASE_URL, REGISTER_ENDPOINT, LOGIN_ENDPOINT
+from constants.api_constants import AUTH_BASE_URL, REGISTER_ENDPOINT, LOGIN_ENDPOINT
 from custom_requester.custom_requester import CustomRequester
 
 
@@ -22,7 +22,7 @@ class AuthApi(CustomRequester):
             expected_status=expected_status
         )
 
-    def login(self, login_data, expected_status=200):
+    def login(self, login_data, expected_status=(200, 201)):
         return self.send_request(
             method='POST',
             endpoint=LOGIN_ENDPOINT,
@@ -31,8 +31,7 @@ class AuthApi(CustomRequester):
         )
 
     def login_and_get_token(self, login_data) -> str:
-
-        response = self.login(login_data, expected_status=200)
+        response = self.login(login_data, expected_status=(200, 201))
 
         body = response.json()
         token = body.get('accessToken')

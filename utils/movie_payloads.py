@@ -4,11 +4,12 @@ from faker import Faker
 
 faker = Faker()
 
+
 class MovieDataGenerator:
 
     @staticmethod
     def movie_payload(**overrides):
-        payload =  {
+        payload = {
             'name': faker.sentence(nb_words=3),
             'imageUrl': faker.image_url(),
             'price': random.randint(100, 1000),

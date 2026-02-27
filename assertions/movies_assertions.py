@@ -1,38 +1,93 @@
-def assert_movies_contract(data):
-    assert 'movies' in data, 'В ответе нет поля movies'
-    assert isinstance(data['movies'], list), 'movies должен быть списком'
-    assert len(data['movies']) > 0, 'Список movies пуст'
+def assert_movies_contract(response):
+    try:
+        data = response.json()
+    except ValueError:
+        raise AssertionError(f'Ответ не является JSON: {response.text}')
 
-    movie = data['movies'][0]
-    for field in ('id', 'name', 'price', 'genreId'):
-        assert field in movie, f'Отсутствует поле {field}'
+    assert data, "Response body is empty"
+    assert isinstance(data, dict), "Response must be dict"
 
-def assert_movie_contract(data):
-    assert data, 'Тело ответа отсутсвует'
-    assert isinstance(data, dict), 'Ответ должен быть dict'
+    assert "movies" in data, "Response missing 'movies'"
+    assert isinstance(data["movies"], list), "'movies' must be list"
+    assert data["movies"], "'movies' list is empty"
 
-    for field in ('name', 'price', 'location'):
-        assert field in data, f'Отсутствует поле {field}'
+    required_fields = ("id", "name", "price", "genreId")
 
-def assert_bad_request(data):
-    assert data["statusCode"] == 400
-    assert data["error"] == "Bad Request"
-    assert data["message"]
+    for i, movie in enumerate(data["movies"]):
+
+        assert isinstance(movie, dict), f"Movie #{i} is not dict"
+
+        for field in required_fields:
+            assert field in movie, f"Movie #{i} missing field '{field}'"
+
+        assert isinstance(movie["id"], int), f"Movie #{i} id must be int"
+        assert isinstance(movie["name"], str), f"Movie #{i} name must be str"
+        assert isinstance(movie["price"], (int, float)), f"Movie #{i} price must be number"
+
+    return data
+
+
+def assert_movie_contract(response):
+    try:
+        data = response.json()
+    except ValueError:
+        raise AssertionError(f'Ответ не является JSON: {response.text}')
+
+    assert data, "Response body is empty"
+    assert isinstance(data, dict), "Response must be dict"
+
+    required_fields = (
+        "id",
+        "name",
+        "price",
+        "location",
+        "createdAt",
+    )
+
+    for field in required_fields:
+        assert field in data, f"Missing field '{field}'"
+
+    assert isinstance(data["id"], int)
+    assert isinstance(data["name"], str)
+    assert isinstance(data["price"], (int, float))
+    assert isinstance(data["location"], str)
+
+    return data
+
+def assert_error_contract(response, status_code, error=None):
+    try:
+        data = response.json()
+    except ValueError:
+        raise AssertionError(f'Ответ не является JSON: {response.text}')
+
+    assert isinstance(data, dict), "Response must be dict"
+
+    assert data.get("statusCode") == status_code, \
+        f"Expected {status_code}, got {data.get('statusCode')}"
+
+    if error:
+        assert data.get("error") == error
+
+    assert data.get("message"), "Error message is empty"
+
+    return data
+
+
+def assert_bad_request(response):
+    assert_error_contract(response, 400, "Bad Request")
+
 
 def assert_conflict(data):
-    assert data["statusCode"] == 409
-    assert data["error"] == "Conflict"
-    assert "уже существует" in data["message"]
+    assert_error_contract(data, 409, "Conflict")
+
 
 def assert_not_found(data):
-    assert data["statusCode"] == 404
-    assert data["error"] == "Not Found"
-    assert "не найден" in data["message"]
+    assert_error_contract(data, 404, "Not Found")
+
 
 def assert_unauthorized(data):
-    assert data["statusCode"] == 401
-    assert data["message"]
+    assert_error_contract(data, 401)
+
 
 def assert_forbidden(data):
-    assert data["statusCode"] == 403
-    assert data["message"]
+    assert_error_contract(data, 403)

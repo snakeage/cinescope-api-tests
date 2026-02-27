@@ -2,95 +2,157 @@ import pytest
 import requests
 
 from clients.api_manager import ApiManager
-from utils.data_generator import DataGenerator
+from constants.roles import Roles
+from entities.movie import Movie
+from entities.user import User
+from resources.user_creds import SuperAdminCreds
 from utils.movie_payloads import MovieDataGenerator
-
-
-@pytest.fixture(scope='session')
-def session():
-    s = requests.Session()
-    yield s
-    s.close()
-
-
-@pytest.fixture(scope='session')
-def api_manager(session):
-    return ApiManager(session)
+from utils.user_payloads import generate_admin_user_payload
 
 
 @pytest.fixture
-def test_user():
-    random_email = DataGenerator.generate_random_email()
-    random_name = DataGenerator.generate_random_name()
-    random_password = DataGenerator.generate_random_password()
+def user_session():
+    sessions = []
 
-    return {
-        'email': random_email,
-        'fullName': random_name,
-        'password': random_password,
-        'passwordRepeat': random_password,
-        'roles': ['USER']
-    }.copy()
+    def _create():
+        session = requests.Session()
+        api = ApiManager(session)
+        sessions.append(api)
+        return api
 
+    yield _create
 
-@pytest.fixture
-def authorized_api(api_manager, registered_user):
-    api_manager.authenticate(registered_user)
-    return api_manager
+    for api in sessions:
+        api.close_session()
 
 
 @pytest.fixture
-def registered_user(api_manager, test_user):
-    resp = api_manager.auth_api.register_user(test_user)
-    user = resp.json()
+def api(user_session):
+    return user_session()
 
-    user['_password'] = test_user['password']
-
-    yield user
-    api_manager.authenticate(user)
-    api_manager.user_api.delete_user(user['id'])
 
 @pytest.fixture
-def movie_data():
-    return MovieDataGenerator.movie_payload().copy()
+def auth_api(api):
+    return api.auth
 
-@pytest.fixture(scope="session")
-def super_admin_credentials():
-    return {
-        "email": "api1@gmail.com",
-        "password": "asdqwe123Q"
-    }
 
 @pytest.fixture
-def super_admin_api(super_admin_credentials):
-    session = requests.Session()
-    manager = ApiManager(session)
+def super_admin(user_session):
+    api = user_session()
 
-    token = manager.auth_api.login_and_get_token(super_admin_credentials)
+    super_admin = User(
+        email=SuperAdminCreds.USERNAME,
+        password=SuperAdminCreds.PASSWORD,
+        roles=[Roles.SUPER_ADMIN.value],
+        api=api,
+    )
 
-    session.headers.update({
-        'Authorization': f'Bearer {token}'
-    })
+    super_admin.authenticate()
 
-    return manager
+    return super_admin
+
 
 @pytest.fixture
-def create_movie(super_admin_api):
-    payload = MovieDataGenerator.movie_payload()
-    resp = super_admin_api.movies_api.create_movie(payload)
+def user_factory(user_session, super_admin):
+    created_users = []
 
-    movie = resp.json()
+    def _create_user(role: Roles):
+
+        api = user_session()
+
+        payload, password = generate_admin_user_payload()
+
+        response = super_admin.api.users.create_user(payload)
+
+        created_user = response.json()
+
+        user = User(
+            email=payload['email'],
+            password=password,
+            roles=[role.value],
+            api=api
+        )
+
+        user.id = created_user['id']
+        user.full_name = created_user['fullName']
+        user.verified = created_user['verified']
+        user.authenticate()
+
+        created_users.append(user)
+
+        return user
+
+    yield _create_user
+
+    for user in created_users:
+        try:
+            super_admin.api.users.delete_user(user.id)
+        except Exception:
+            pass
+
+
+@pytest.fixture
+def common_user(user_factory):
+    return user_factory(Roles.USER)
+
+
+@pytest.fixture
+def unauthorized_api(user_session):
+    return user_session()
+
+
+@pytest.fixture
+def unauthorized_movie(unauthorized_api, created_movie, super_admin):
+    movie = Movie(api=unauthorized_api)
+    movie.id = created_movie.id
+    movie.data = created_movie.data
 
     yield movie
 
-    movie_id = movie['id']
-    super_admin_api.movies_api.delete_movie(movie_id)
+    if movie.id:
+        admin_movie = Movie(api=super_admin.api)
+        admin_movie.id = movie.id
+        admin_movie.delete(expected_status=[200, 404])
+
 
 @pytest.fixture
-def create_movie_for_delete(super_admin_api):
-    payload = MovieDataGenerator.movie_payload()
-    resp = super_admin_api.movies_api.create_movie(payload)
+def unauthorized_movies(unauthorized_api):
+    movies = Movie(api=unauthorized_api)
 
-    movie = resp.json()
+    return movies
+
+
+@pytest.fixture
+def registered_movie(common_user, created_movie, super_admin):
+    movie = Movie(api=common_user.api)
+    movie.id = created_movie.id
+    movie.data = created_movie.data
+
+    yield movie
+
+    if movie.id:
+        admin_movie = Movie(api=super_admin.api)
+        admin_movie.id = movie.id
+        admin_movie.delete(expected_status=[200, 404])
+
+
+@pytest.fixture
+def movie_data():
+    return MovieDataGenerator.movie_payload()
+
+
+@pytest.fixture
+def movie(super_admin):
+    movie = Movie(api=super_admin.api)
+
+    yield movie
+
+    if movie.id:
+        movie.delete(expected_status=[200, 404])
+
+
+@pytest.fixture
+def created_movie(movie, movie_data):
+    movie.create(movie_data)
 
     return movie

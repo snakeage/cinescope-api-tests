@@ -10,7 +10,7 @@ class DataGenerator:
 
     @staticmethod
     def generate_random_email():
-        random_string_length = random.randint(3, 32)
+        random_string_length = random.randint(4, 32)
         random_string = ''.join(
             random.choices(string.ascii_lowercase + string.digits, k=random_string_length)
         )

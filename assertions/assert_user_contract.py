@@ -1,4 +1,7 @@
 import re
+from datetime import datetime
+
+from constants.roles import Roles
 
 UUID_REGEX = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
@@ -6,45 +9,42 @@ UUID_REGEX = re.compile(
 )
 
 
-def assert_user_contract(data, expected_email, expected_name):
-    assert isinstance(data, dict)
+def assert_user_contract(response, expected_email, expected_name):
+    try:
+        data = response.json()
+    except ValueError:
+        raise AssertionError(f"Ответ не является JSON: {response.text}")
 
-    assert "id" in data
-    assert isinstance(data["id"], str)
-    assert UUID_REGEX.match(data["id"]), "id не похож на UUID"
+    assert isinstance(data, dict), "Ответ должен быть dict"
 
-    assert data["email"] == expected_email
-    assert data["fullName"] == expected_name
+    user_id = data.get("id")
+    assert user_id, "Отсутствует id"
+    assert isinstance(user_id, str)
+    assert UUID_REGEX.match(user_id), "id не похож на UUID"
 
-    assert isinstance(data["roles"], list)
-    assert "USER" in data["roles"]
+    assert data.get("email") == expected_email
+    assert data.get("fullName") == expected_name
 
-    assert isinstance(data["verified"], bool)
+    roles = data.get("roles")
+    assert isinstance(roles, list), "roles должен быть list"
+    assert "USER" in roles
+
+    assert isinstance(data.get("verified"), bool)
     assert data["verified"] is True
 
-    assert isinstance(data["createdAt"], str)
-    # проверяем, что это валидный ISO datetime
-    datetime.fromisoformat(data["createdAt"].replace("Z", "+00:00"))
+    created_at = data.get("createdAt")
+    assert isinstance(created_at, str)
+    datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+
+    return data
 
 
-def assert_user_registered(register_response):
-    assert register_response.status_code == 201, (
-        f'Ошибка регистрации пользователя '
-        f'[{register_response.status_code}]: {register_response.text}'
-    )
+def assert_login_contract(response, expected_email):
+    try:
+        data = response.json()
+    except ValueError:
+        raise AssertionError(f"Ответ не является JSON: {response.text}")
 
-
-def assert_user_logged_in(login_response):
-    assert login_response.status_code == 201, (
-        f'Ошибка логина пользователя '
-        f'[{login_response.status_code}]: {login_response.text}'
-    )
-
-
-from datetime import datetime
-
-
-def assert_login_contract(data, expected_email):
     # верхний уровень
     assert isinstance(data, dict)
     assert "user" in data, "В ответе отсутствует user"
@@ -72,8 +72,38 @@ def assert_login_contract(data, expected_email):
     assert isinstance(user["roles"], list)
     assert "USER" in user["roles"]
 
-    # assert isinstance(user["verified"], bool)
-    # assert user["verified"] is True
+    return data
 
-    # assert isinstance(user["banned"], bool)
-    # assert user["banned"] is False
+def assert_user_created(response, expected_payload, expected_roles=None):
+    data = assert_user_response(response)
+
+    for field in ("email", "fullName", "verified"):
+        assert data[field] == expected_payload[field], (
+            f"{field}: ожидали {expected_payload[field]}, "
+            f"получили {data[field]}"
+        )
+
+    if expected_roles is not None:
+        assert data["roles"] == expected_roles
+
+    return data
+
+def assert_user_response(response):
+    try:
+        data = response.json()
+    except ValueError:
+        raise AssertionError(f"Ответ не является JSON: {response.text}")
+
+    assert isinstance(data, dict), "Тело ответа должно быть dict"
+
+    required_fields = (
+        "id", "email", "fullName",
+        "createdAt", "verified", "banned", "roles"
+    )
+
+    for field in required_fields:
+        assert data.get(field) is not None, f"Отсутствует поле {field}"
+
+    datetime.fromisoformat(data["createdAt"].replace("Z", "+00:00"))
+
+    return data
