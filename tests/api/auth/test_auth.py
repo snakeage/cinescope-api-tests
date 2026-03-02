@@ -1,10 +1,12 @@
-from datetime import datetime
+import pytest
 
-from assertions.assert_user_contract import assert_user_contract, assert_login_contract, assert_user_created, \
-    assert_user_response
 from assertions.auth_assertions import assert_login_failed, assert_get_user_forbidden
-from conftest import common_user
 from constants.roles import Roles
+from models.admin_models import AdminCreateUserResponse
+from models.get_user_models import GetUserResponse
+from models.login_models import LoginResponse
+from models.register_models import RegisterUserResponse
+from utils.data_generator import DataGenerator
 from utils.user_payloads import generate_register_payload, generate_admin_user_payload
 
 
@@ -12,25 +14,34 @@ class TestAuthApi:
     def test_register_user(self, auth_api):
         payload, _ = generate_register_payload()
 
-        resp = auth_api.register_user(payload)
-
-        assert_user_contract(
-            resp,
-            payload['email'],
-            payload['fullName']
+        user = auth_api.register_user(
+            payload,
+            response_model=RegisterUserResponse
         )
+
+        assert user.email == payload.email
+        assert user.full_name == payload.full_name
+        assert Roles.USER in user.roles
+        assert user.verified is True
 
     def test_login_user(self, auth_api):
         payload, password = generate_register_payload()
 
         auth_api.register_user(payload)
 
-        resp = auth_api.login({
-            'email': payload['email'],
+        login_data = {
+            'email': payload.email,
             'password': password
-        })
+        }
 
-        assert_login_contract(resp, payload['email'])
+        login = auth_api.login(
+            login_data,
+            response_model=LoginResponse
+        )
+
+        assert login.user.email == payload.email
+        assert Roles.USER in login.user.roles
+        assert login.access_token
 
     def test_login_user_with_wrong_password_returns_401(self, auth_api):
         payload, password = generate_register_payload()
@@ -38,7 +49,7 @@ class TestAuthApi:
         auth_api.register_user(payload)
 
         resp = auth_api.login({
-            'email': payload['email'],
+            'email': payload.email,
             'password': f'{password}_WRONG_PASSWORD'
         },
             expected_status=401)
@@ -51,7 +62,7 @@ class TestAuthApi:
         auth_api.register_user(payload)
 
         bad_login_data = {
-            'email': f'WRONG_EMAIL_{payload["email"]}',
+            'email': DataGenerator.generate_wrong_random_email(),
             'password': password,
         }
 
@@ -70,25 +81,37 @@ class TestAuthApi:
 
         assert_login_failed(resp)
 
+    @pytest.mark.slow
     def test_get_user_by_id_forbidden_for_common_user(self, common_user):
         resp = common_user.get_user(common_user.id, expected_status=403)
 
         assert_get_user_forbidden(resp)
 
+    @pytest.mark.slow
     def test_get_user_by_email_forbidden_for_common_user(self, common_user):
         resp = common_user.get_user(common_user.email, expected_status=403)
 
         assert_get_user_forbidden(resp)
 
+    @pytest.mark.slow
     def test_super_admin_can_get_user(self, super_admin, common_user):
-        resp = super_admin.get_user(common_user.id)
-        data = assert_user_contract(resp, common_user.email, common_user.full_name)
+        user = super_admin.get_user(
+            common_user.id,
+            response_model=GetUserResponse
+        )
 
-        assert data['roles'] == common_user.roles
+        assert user.email == common_user.email
+        assert [r.value for r in user.roles] == common_user.roles
 
     def test_create_user(self, super_admin):
-        payload, password = generate_admin_user_payload()
+        payload, _ = generate_admin_user_payload()
 
-        resp = super_admin.create_user(payload)
+        user = super_admin.create_user(
+            payload,
+            response_model=AdminCreateUserResponse
+        )
 
-        assert_user_contract(resp, payload['email'], payload['fullName'])
+        assert user.email == payload.email
+        assert user.full_name == payload.full_name
+        assert user.verified is True
+        assert Roles.USER in user.roles

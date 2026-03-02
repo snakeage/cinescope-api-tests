@@ -17,6 +17,18 @@ class DataGenerator:
         return f'{random_string}@gmail.com'
 
     @staticmethod
+    def generate_wrong_random_email():
+        max_length = 32
+        random_email = DataGenerator.generate_random_email()
+
+        wrong_email = f'WRONG_EMAIL_{random_email}'
+
+        if len(wrong_email) > max_length:
+            wrong_email = wrong_email[:max_length]
+
+        return wrong_email
+
+    @staticmethod
     def generate_random_name():
         return f'{faker.first_name()} {faker.last_name()}'
 
@@ -29,7 +41,7 @@ class DataGenerator:
         cyr_upper = "АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
 
         digits = string.digits
-        special = r"""~!?@#$%^&*_-+()[{}><>/\\|\"'.,:]"""
+        special = r"""?@#$%^&*_-+()[]{}><\/|"\'.,:;"""
 
         required = [
             random.choice(lat_lower + cyr_lower),

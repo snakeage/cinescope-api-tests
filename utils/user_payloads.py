@@ -1,3 +1,5 @@
+from models.admin_models import AdminCreateUserRequest
+from models.register_models import RegisterUserRequest
 from utils.data_generator import DataGenerator
 
 
@@ -6,13 +8,13 @@ def generate_register_payload():
     full_name = DataGenerator.generate_random_name()
     password = DataGenerator.generate_random_password()
 
-    payload = {
-        'email': email,
-        'fullName': full_name,
-        'password': password,
-        'passwordRepeat': password
-    }
-    return payload, password
+    model = RegisterUserRequest(
+        email=email,
+        full_name=full_name,
+        password=password,
+        password_repeat=password
+    )
+    return model, password
 
 
 def generate_admin_user_payload():
@@ -20,11 +22,11 @@ def generate_admin_user_payload():
     full_name = DataGenerator.generate_random_name()
     password = DataGenerator.generate_random_password()
 
-    payload = {
-        'email': email,
-        'fullName': full_name,
-        'password': password,
-        'verified': True,
-        'banned': False
-    }
-    return payload, password
+    model = AdminCreateUserRequest(
+        email=email,
+        full_name=full_name,
+        password=password,
+        verified=True,
+        banned=False
+    )
+    return model, password

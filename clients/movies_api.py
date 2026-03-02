@@ -1,5 +1,12 @@
+from typing import TypeVar, Type, overload
+
+import requests
+from pydantic import BaseModel
+
 from constants.api_constants import MOVIES, API_BASE_URL
 from custom_requester.custom_requester import CustomRequester
+
+T = TypeVar('T', bound=BaseModel)
 
 
 class MoviesApi(CustomRequester):
@@ -9,35 +16,173 @@ class MoviesApi(CustomRequester):
             base_url=API_BASE_URL
         )
 
-    def get_movies(self, expected_status=200, **params):
+    @overload
+    def get_movies(
+        self,
+        expected_status: int = 200,
+        *,
+        response_model: Type[T],
+        **params,
+    ) -> T:
+        ...
+
+    @overload
+    def get_movies(
+        self,
+        expected_status: int = 200,
+        *,
+        response_model: None = None,
+        **params,
+    ) -> requests.Response:
+        ...
+
+    def get_movies(
+        self,
+        expected_status: int = 200,
+        *,
+        response_model: Type[T] | None = None,
+        **params,
+    ):
         return self.get(
             endpoint=MOVIES,
             params=params,
-            expected_status=expected_status
+            expected_status=expected_status,
+            response_model=response_model
         )
 
-    def create_movie(self, data, expected_status=201):
+    @overload
+    def create_movie(
+        self,
+        data,
+        expected_status: int = 201,
+        *,
+        response_model: Type[T],
+    ) -> T:
+        ...
+
+    @overload
+    def create_movie(
+        self,
+        data,
+        expected_status: int = 201,
+        *,
+        response_model: None = None,
+    ) -> requests.Response:
+        ...
+
+    def create_movie(
+        self,
+        data,
+        expected_status: int = 201,
+        *,
+        response_model: Type[T] | None = None,
+    ):
         return self.post(
             endpoint=MOVIES,
             data=data,
-            expected_status=expected_status
+            expected_status=expected_status,
+            response_model=response_model
         )
 
-    def get_movie(self, movie_id, expected_status=200):
+    @overload
+    def get_movie(
+        self,
+        movie_id, 
+        expected_status: int = 200,
+        *,
+        response_model: Type[T],
+    ) -> T:
+        ...
+
+    @overload
+    def get_movie(
+        self,
+        movie_id, 
+        expected_status: int = 200,
+        *,
+        response_model: None = None,
+    ) -> requests.Response:
+        ...
+
+    def get_movie(
+        self,
+        movie_id, 
+        expected_status: int = 200,
+        *,
+        response_model: Type[T] | None = None,
+    ):
         return self.get(
             endpoint=f'{MOVIES}/{movie_id}',
-            expected_status=expected_status
+            expected_status=expected_status,
+            response_model=response_model
         )
 
-    def update_movie(self, movie_id, data, expected_status=200):
+    @overload
+    def update_movie(
+        self,
+        movie_id,
+        data,
+        expected_status: int = 200,
+        *,
+        response_model: Type[T],
+    ) -> T:
+        ...
+
+    @overload
+    def update_movie(
+        self,
+        movie_id,
+        data,
+        expected_status: int = 200,
+        *,
+        response_model: None = None,
+    ) -> requests.Response:
+        ...
+
+    def update_movie(
+        self,
+        movie_id,
+        data,
+        expected_status: int = 200,
+        *,
+        response_model: Type[T] | None = None,
+    ):
         return self.patch(
             endpoint=f'{MOVIES}/{movie_id}',
             data=data,
-            expected_status=expected_status
+            expected_status=expected_status,
+            response_model=response_model
         )
 
-    def delete_movie(self, movie_id, expected_status=200):
+    @overload
+    def delete_movie(
+        self,
+        movie_id,
+        expected_status: int = 200,
+        *,
+        response_model: Type[T],
+    ) -> T:
+        ...
+
+    @overload
+    def delete_movie(
+        self,
+        movie_id,
+        expected_status: int = 200,
+        *,
+        response_model: None = None,
+    ) -> requests.Response:
+        ...
+
+    def delete_movie(
+        self,
+        movie_id,
+        expected_status: int = 200,
+        *,
+        response_model: Type[T] | None = None,
+    ):
         return self.delete(
             endpoint=f'{MOVIES}/{movie_id}',
-            expected_status=expected_status
+            expected_status=expected_status,
+            response_model=response_model
         )

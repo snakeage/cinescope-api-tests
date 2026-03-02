@@ -5,6 +5,8 @@ from clients.api_manager import ApiManager
 from constants.roles import Roles
 from entities.movie import Movie
 from entities.user import User
+from models.admin_models import AdminCreateUserResponse
+from models.movie_models import MovieResponse
 from resources.user_creds import SuperAdminCreds
 from utils.movie_payloads import MovieDataGenerator
 from utils.user_payloads import generate_admin_user_payload
@@ -62,20 +64,21 @@ def user_factory(user_session, super_admin):
 
         payload, password = generate_admin_user_payload()
 
-        response = super_admin.api.users.create_user(payload)
-
-        created_user = response.json()
+        created_user = super_admin.api.users.create_user(
+            payload,
+            response_model=AdminCreateUserResponse
+        )
 
         user = User(
-            email=payload['email'],
+            email=payload.email,
             password=password,
             roles=[role.value],
             api=api
         )
 
-        user.id = created_user['id']
-        user.full_name = created_user['fullName']
-        user.verified = created_user['verified']
+        user.id = str(created_user.id)
+        user.full_name = created_user.full_name
+        user.verified = created_user.verified
         user.authenticate()
 
         created_users.append(user)
@@ -153,6 +156,6 @@ def movie(super_admin):
 
 @pytest.fixture
 def created_movie(movie, movie_data):
-    movie.create(movie_data)
+    movie.create(movie_data, response_model=MovieResponse)
 
     return movie

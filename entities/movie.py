@@ -1,6 +1,11 @@
-from typing import Optional, List
+from typing import List, Optional, Type, TypeVar, overload
+
+import requests
+from pydantic import BaseModel
 
 from clients.api_manager import ApiManager
+
+T = TypeVar('T', bound=BaseModel)
 
 
 class Movie:
@@ -18,54 +23,164 @@ class Movie:
 
     @property
     def name(self):
-        return self.data.get('name') if self.data else None
+        return self.data.get('name') if isinstance(self.data, dict) else None
 
-    def create(self, payload, expected_status=201):
-        resp = self.api.movies.create_movie(
+    @overload
+    def create(
+        self,
+        payload,
+        expected_status: int = 201,
+        *,
+        response_model: Type[T],
+    ) -> T:
+        ...
+
+    @overload
+    def create(
+        self,
+        payload,
+        expected_status: int = 201,
+        *,
+        response_model: None = None,
+    ) -> requests.Response:
+        ...
+
+    def create(
+        self,
+        payload,
+        expected_status: int = 201,
+        *,
+        response_model: Type[T] | None = None
+    ):
+        result = self.api.movies.create_movie(
             payload,
-            expected_status=expected_status
+            expected_status=expected_status,
+            response_model=response_model
         )
 
-        body = resp.json()
+        if response_model is not None:
+            self.id = result.id
+            self.data = result.model_dump(by_alias=True)
 
-        self.data = body
-        self.id = body.get('id')
+        return result
 
-        return resp
+    @overload
+    def get(
+            self,
+            movie_id=None,
+            expected_status: int = 200,
+            *,
+            response_model: Type[T],
+    ) -> T:
+        ...
 
-    def get(self, movie_id=None, expected_status=200):
+    @overload
+    def get(
+            self,
+            movie_id=None,
+            expected_status: int = 200,
+            *,
+            response_model: None = None
+    ) -> requests.Response:
+        ...
+
+    def get(
+            self,
+            movie_id=None,
+            expected_status: int = 200,
+            *,
+            response_model: Type[T] | None = None,
+    ):
+
         target_id = movie_id or self.id
 
-        resp = self.api.movies.get_movie(
+        result = self.api.movies.get_movie(
             target_id,
-            expected_status=expected_status
+            expected_status=expected_status,
+            response_model=response_model
         )
 
-        if resp.status_code == 200:
-            self.data = resp.json()
-            self.id = self.data['id']
+        if response_model is not None:
+            self.id = result.id
+            self.data = result.model_dump(by_alias=True)
 
-        return resp
+        return result
 
-    def update(self, payload=None, movie_id=None, expected_status=200):
+    @overload
+    def update(
+            self,
+            payload=None,
+            movie_id=None,
+            expected_status: int = 200,
+            *,
+            response_model: Type[T],
+    ) -> T:
+        ...
+
+    @overload
+    def update(
+            self,
+            payload=None,
+            movie_id=None,
+            expected_status: int = 200,
+            *,
+            response_model: None = None,
+    ) -> requests.Response:
+        ...
+
+    def update(
+            self,
+            payload=None,
+            movie_id=None,
+            expected_status: int = 200,
+            *,
+            response_model: Type[T] | None = None,
+    ):
         target_id = movie_id or self.id
 
         if not target_id:
             raise ValueError('Movie id не задан.')
 
-        resp = self.api.movies.update_movie(
+        result = self.api.movies.update_movie(
             target_id,
             payload,
-            expected_status=expected_status
+            expected_status=expected_status,
+            response_model=response_model
         )
 
-        if resp.status_code == 200:
-            self.data = resp.json()
-            self.id = self.data['id']
+        if response_model is not None:
+            self.id = result.id
+            self.data = result.model_dump(by_alias=True)
 
-        return resp
+        return result
 
-    def delete(self, movie_id=None, expected_status=200):
+    @overload
+    def delete(
+            self,
+            movie_id=None,
+            expected_status: int = 200,
+            *,
+            response_model: Type[T],
+    ) -> T:
+        ...
+
+    @overload
+    def delete(
+            self,
+            movie_id=None,
+            expected_status: int = 200,
+            *,
+            response_model: None = None,
+    ) -> requests.Response:
+        ...
+
+    def delete(
+            self,
+            movie_id=None,
+            expected_status: int = 200,
+            *,
+            response_model: Type[T] | None = None,
+    ):
         target_id = movie_id or self.id
 
         if not target_id:
@@ -73,10 +188,45 @@ class Movie:
 
         resp = self.api.movies.delete_movie(
             target_id,
-            expected_status=expected_status
+            expected_status=expected_status,
+            response_model=response_model
         )
 
         return resp
+
+    @overload
+    def get_movies(
+            self,
+            page: Optional[int] = None,
+            page_size: Optional[int] = None,
+            min_price: Optional[int] = None,
+            max_price: Optional[int] = None,
+            locations: Optional[List[str]] = None,
+            published: Optional[bool] = None,
+            genre_id: Optional[int] = None,
+            created_at: Optional[str] = None,
+            expected_status: int = 200,
+            *,
+            response_model: Type[T],
+    ) -> T:
+        ...
+    
+    @overload
+    def get_movies(
+            self,
+            page: Optional[int] = None,
+            page_size: Optional[int] = None,
+            min_price: Optional[int] = None,
+            max_price: Optional[int] = None,
+            locations: Optional[List[str]] = None,
+            published: Optional[bool] = None,
+            genre_id: Optional[int] = None,
+            created_at: Optional[str] = None,
+            expected_status: int = 200,
+            *,
+            response_model: None = None,
+    ) -> requests.Response:
+        ...
 
     def get_movies(
             self,
@@ -89,6 +239,8 @@ class Movie:
             genre_id: Optional[int] = None,
             created_at: Optional[str] = None,
             expected_status: int = 200,
+            *,
+            response_model: Type[T] | None = None,
     ):
         params = {
             "page": page,
@@ -105,5 +257,6 @@ class Movie:
 
         return self.api.movies.get_movies(
             expected_status=expected_status,
+            response_model=response_model,
             **params
         )

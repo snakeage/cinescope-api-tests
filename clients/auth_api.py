@@ -1,5 +1,13 @@
+from typing import TypeVar, Type, overload
+
+import requests
+from pydantic import BaseModel
+
 from constants.api_constants import AUTH_BASE_URL, REGISTER_ENDPOINT, LOGIN_ENDPOINT
 from custom_requester.custom_requester import CustomRequester
+from models.login_models import LoginResponse
+
+T = TypeVar('T', bound=BaseModel)
 
 
 class AuthApi(CustomRequester):
@@ -9,34 +17,80 @@ class AuthApi(CustomRequester):
             base_url=AUTH_BASE_URL
         )
 
-    def register_user(self, user_data, expected_status=201):
-        """
-        Регистрация нового пользователя.
-        :param user_data: Данные пользователя.
-        :param expected_status: Ожидаемый статус-код.
-        """
+    @overload
+    def register_user(
+            self,
+            user_data,
+            expected_status: int = 201,
+            *,
+            response_model: Type[T]
+    ) -> T:
+        ...
+
+    @overload
+    def register_user(
+            self,
+            user_data,
+            expected_status: int = 201,
+            *,
+            response_model: None = None
+    ) -> requests.Response:
+        ...
+
+    def register_user(
+            self,
+            user_data,
+            expected_status: int = 201,
+            *,
+            response_model: Type[T] | None = None
+    ):
         return self.send_request(
             method='POST',
             endpoint=REGISTER_ENDPOINT,
             data=user_data,
-            expected_status=expected_status
+            expected_status=expected_status,
+            response_model=response_model
         )
 
-    def login(self, login_data, expected_status=(200, 201)):
+    @overload
+    def login(
+            self,
+            login_data,
+            expected_status: int = 200,
+            *,
+            response_model: Type[T]
+    ) -> T:
+        ...
+
+    @overload
+    def login(
+            self,
+            login_data,
+            expected_status: int = 200,
+            *,
+            response_model: None = None
+    ) -> requests.Response:
+        ...
+
+    def login(
+            self,
+            login_data,
+            expected_status: int = 200,
+            *,
+            response_model: Type[T] | None = None
+    ):
         return self.send_request(
             method='POST',
             endpoint=LOGIN_ENDPOINT,
             data=login_data,
             expected_status=expected_status,
+            response_model=response_model
         )
 
     def login_and_get_token(self, login_data) -> str:
-        response = self.login(login_data, expected_status=(200, 201))
+        login_response = self.login(
+            login_data,
+            response_model=LoginResponse
+        )
 
-        body = response.json()
-        token = body.get('accessToken')
-
-        if not token:
-            raise KeyError(f'Токе не найден в ответе: {body}')
-
-        return token
+        return login_response.access_token

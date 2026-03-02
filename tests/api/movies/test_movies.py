@@ -1,91 +1,74 @@
-from datetime import datetime
-
 import pytest
 
-from assertions.movies_assertions import assert_movies_contract, assert_movie_contract, assert_bad_request, \
-    assert_conflict, assert_not_found, assert_unauthorized, assert_forbidden
-from conftest import common_user
-from constants.roles import Roles
+from assertions.movies_assertions import (
+    assert_bad_request,
+    assert_conflict,
+    assert_forbidden,
+    assert_not_found,
+    assert_unauthorized,
+)
 from entities.movie import Movie
+from models.movie_models import MovieResponse, MoviesListResponse
 from utils.movie_payloads import MovieDataGenerator
 
 
 class TestMoviesApi:
     def test_get_movies(self, unauthorized_movies):
-        resp = unauthorized_movies.get_movies()
+        data = unauthorized_movies.get_movies(response_model=MoviesListResponse)
 
-        assert_movies_contract(resp)
+        assert isinstance(data.movies, list)
 
     def test_get_movies_filter_by_location(self, unauthorized_movies):
-        resp = unauthorized_movies.get_movies(
-            locations=['MSK']
+        data = unauthorized_movies.get_movies(
+            locations=['MSK'],
+            response_model=MoviesListResponse
         )
 
-        data = assert_movies_contract(resp)
-
-        movies = data['movies']
+        movies = data.movies
         assert movies, 'Фильтр по location вернул пустой список'
 
         for movie in movies:
-            assert movie['location'] == 'MSK'
+            assert movie.location == 'MSK'
 
     def test_get_movies_filter_by_price_range(self, unauthorized_movies):
-        resp = unauthorized_movies.get_movies(
+        data = unauthorized_movies.get_movies(
             min_price=100,
-            max_price=1000
+            max_price=1000,
+            response_model=MoviesListResponse
         )
 
-        data = assert_movies_contract(resp)
-
-        movies = data['movies']
-        for movie in movies:
-            assert 100 <= movie['price'] <= 1000
-
+        for movie in data.movies:
+            assert 100 <= movie.price <= 1000
 
     def test_get_movies_filter_by_published(self, unauthorized_movies):
-        resp = unauthorized_movies.get_movies(
-            published=True
+        data = unauthorized_movies.get_movies(
+            published=True,
+            response_model=MoviesListResponse
         )
 
-        data = assert_movies_contract(resp)
-
-        movies = data['movies']
-        for movie in movies:
-            assert movie['published'] is True
-
-
+        for movie in data.movies:
+            assert movie.published is True
 
     def test_get_movies_sorted_by_created_at_desc(self, unauthorized_movies):
-        resp = unauthorized_movies.get_movies(
-            created_at='desc'
+        data = unauthorized_movies.get_movies(
+            created_at='desc',
+            response_model=MoviesListResponse
         )
 
-        data = assert_movies_contract(resp)
-
-        movies = data['movies']
-        dates = [
-            datetime.fromisoformat(movie['createdAt'].replace("Z", "+00:00"))
-            for movie in movies
-        ]
+        dates = [movie.created_at for movie in data.movies]
 
         assert dates == sorted(dates, reverse=True)
 
-
-
     def test_get_movies_pagination(self, unauthorized_movies):
-        resp = unauthorized_movies.get_movies(
+        data = unauthorized_movies.get_movies(
             page=1,
-            page_size=10
+            page_size=10,
+            response_model=MoviesListResponse
         )
 
-        data = assert_movies_contract(resp)
-
-        movies = data['movies']
-        assert len(movies) <= 10
-        assert data['page'] == 1
-        assert data['pageSize'] == 10
-
-
+        assert len(data.movies) <= 10
+        assert data.page == 1
+        assert data.page_size == 10
 
     def test_get_movies_with_invalid_param_returns_400(self, unauthorized_movies):
         resp = unauthorized_movies.get_movies(
@@ -96,9 +79,13 @@ class TestMoviesApi:
         assert_bad_request(resp)
 
     def test_create_movie(self, movie, movie_data):
-        resp = movie.create(movie_data)
+        created = movie.create(
+            movie_data,
+            response_model=MovieResponse
+        )
 
-        assert_movie_contract(resp)
+        assert created.id is not None
+        assert created.name == movie_data['name']
 
     def test_create_movie_with_invalid_name_returns_400(self, movie):
         payload = MovieDataGenerator.movie_payload(name=123)
@@ -119,9 +106,9 @@ class TestMoviesApi:
         assert_conflict(resp)
 
     def test_get_movie(self, created_movie):
-        resp = created_movie.get()
+        got = created_movie.get(response_model=MovieResponse)
 
-        assert_movie_contract(resp)
+        assert got.id == created_movie.id
 
     def test_get_movie_with_nonexisting_id_returns_404(self, movie):
         resp = movie.get(movie_id=9999999, expected_status=404)
@@ -129,12 +116,13 @@ class TestMoviesApi:
         assert_not_found(resp)
 
     def test_delete_movie(self, created_movie):
-        resp = created_movie.delete()
+        deleted = created_movie.delete(response_model=MovieResponse)
 
-        assert_movie_contract(resp)
+        assert deleted.id == created_movie.id
 
         created_movie.get(expected_status=404)
 
+    @pytest.mark.slow
     def test_delete_movie_with_nonexisting_id_returns_404(self, created_movie):
         resp = created_movie.delete(movie_id=99999999, expected_status=404)
 
@@ -149,6 +137,7 @@ class TestMoviesApi:
 
         assert_unauthorized(resp)
 
+    @pytest.mark.slow
     def test_delete_movie_with_non_admin_user_returns_403(
             self,
             registered_movie
@@ -163,15 +152,14 @@ class TestMoviesApi:
 
         patched_payload = {'name': old_name + '_patched'}
 
-        resp = created_movie.update(
+        updated = created_movie.update(
             patched_payload,
-            expected_status=200
+            expected_status=200,
+            response_model=MovieResponse
         )
 
-        data = assert_movie_contract(resp)
-
-        assert data['name'] != old_name, 'Название фильма не обновилось'
-        assert data['name'] == patched_payload['name']
+        assert updated.name != old_name, 'Название фильма не обновилось'
+        assert updated.name == patched_payload['name']
 
     def test_update_movie_with_nonexisting_id_returns_404(
             self,
@@ -202,26 +190,25 @@ def test_get_movies_by_filter(
         locations,
         genre_id
 ):
-    resp = unauthorized_movies.get_movies(
+    body = unauthorized_movies.get_movies(
         min_price=min_price,
         max_price=max_price,
         locations=locations,
         genre_id=genre_id,
+        response_model=MoviesListResponse
     )
 
-    body = resp.json()
+    assert isinstance(body.movies, list)
+    assert body.page == 1
+    assert body.page_size == 10
+    assert len(body.movies) <= 10
 
-    assert 'movies' in body
-    assert isinstance(body['movies'], list)
-    assert body['page'] == 1
-    assert body['pageSize'] == 10
-    assert len(body['movies']) <= 10
+    for movie in body.movies:
+        assert min_price <= movie.price <= max_price
+        assert movie.location in locations
+        assert movie.genre_id == genre_id
+        assert movie.published is True
 
-    for movie in body['movies']:
-        assert min_price <= movie['price'] <= max_price
-        assert movie['location'] in locations
-        assert movie['genreId'] == genre_id
-        assert movie['published'] is True
 
 @pytest.mark.parametrize(
     'actor_fixture, expected_status',
@@ -238,7 +225,6 @@ def test_delete_movie_role_based_access(
         created_movie,
         super_admin,
 ):
-
     actor = request.getfixturevalue(actor_fixture)
 
     movie = Movie(api=actor.api)

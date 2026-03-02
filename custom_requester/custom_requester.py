@@ -1,10 +1,15 @@
 import json
 import logging
 import os
+from typing import Type, overload
+from typing import TypeVar
 
 import requests
+from pydantic import BaseModel
 
 from constants.api_constants import HEADERS
+
+T = TypeVar('T', bound=BaseModel)
 
 
 class UnexpectedStatusCode(Exception):
@@ -29,6 +34,7 @@ class CustomRequester:
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
 
+    @overload
     def send_request(
             self,
             method: str,
@@ -38,21 +44,44 @@ class CustomRequester:
             expected_status=200,
             need_logging: bool = True,
             timeout: int = 15,
-    ) -> requests.Response:
-        """
-        Универсальный метод для отправки запросов.
+            *,
+            response_model: Type[T],
+    ) -> T:
+        ...
 
-        :param method: HTTP метод (GET, POST, PUT, DELETE и т.д.).
-        :param endpoint: Эндпоинт (например, "/login").
-        :param data: Тело запроса (JSON).
-        :param params: Query-параметры.
-        :param expected_status: Ожидаемый статус-код или набор кодов.
-        :param need_logging: Логировать ли запрос и ответ.
-        :param timeout: Таймаут запроса в секундах.
-        :return: requests.Response
-        """
+    @overload
+    def send_request(
+            self,
+            method: str,
+            endpoint: str,
+            data=None,
+            params=None,
+            expected_status=200,
+            need_logging: bool = True,
+            timeout: int = 15,
+            *,
+            response_model: None = None,
+    ) -> requests.Response:
+        ...
+
+    def send_request(
+            self,
+            method: str,
+            endpoint: str,
+            data=None,
+            params=None,
+            expected_status=200,
+            need_logging: bool = True,
+            timeout: int = 15,
+            *,
+            response_model: Type[T] | None = None,
+    ):
 
         url = f'{self.base_url}{endpoint}'
+
+        if isinstance(data, BaseModel):
+            data = data.model_dump(by_alias=True)
+
         response = self.session.request(
             method=method.upper(),
             url=url,
@@ -74,6 +103,9 @@ class CustomRequester:
                 f"{method.upper()} {url} -> {response.status_code}, "
                 f"expected {expected_status}\n{response.text}"
             )
+
+        if response_model is not None:
+            return response_model.model_validate(response.json())
 
         return response
 

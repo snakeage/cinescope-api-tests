@@ -1,4 +1,11 @@
+from typing import TypeVar, Type, overload
+
+import requests
+from pydantic import BaseModel
+
 from clients.api_manager import ApiManager
+
+T = TypeVar('T', bound=BaseModel)
 
 
 class User:
@@ -24,17 +31,79 @@ class User:
             'password': self.password
         }
 
-    def register(self, payload):
-        response = self.api.auth.register_user(payload)
-        body = response.json()
-        self.id = body['id']
-        return response
+    @overload
+    def register(
+            self,
+            payload,
+            expected_status: int = 201,
+            *,
+            response_model: Type[T]
+    ) -> T:
+        ...
 
-    def login(self, creds=None, expected_status=200):
+    @overload
+    def register(
+            self,
+            payload,
+            expected_status: int = 201,
+            *,
+            response_model: None = None
+    ) -> requests.Response:
+        ...
+
+    def register(
+            self,
+            payload,
+            expected_status: int = 201,
+            *,
+            response_model: Type[T] | None = None
+    ):
+        created = self.api.auth.register_user(
+            payload,
+            expected_status=expected_status,
+            response_model=response_model
+        )
+
+        if response_model is not None:
+            self.id = str(created.id)
+
+        return created
+
+    @overload
+    def login(
+            self,
+            creds=None,
+            expected_status: int = 200,
+            *,
+            response_model: Type[T]
+    ) -> T:
+        ...
+
+    @overload
+    def login(
+            self,
+            creds=None,
+            expected_status: int = 200,
+            *,
+            response_model: None = None
+    ) -> requests.Response:
+        ...
+
+    def login(
+            self,
+            creds=None,
+            expected_status: int = 200,
+            *,
+            response_model: Type[T] | None = None
+    ):
         if creds is None:
             creds = self.creds
 
-        return self.api.auth.login(creds, expected_status=expected_status)
+        return self.api.auth.login(
+            creds,
+            expected_status=expected_status,
+            response_model=response_model
+        )
 
     def authenticate(self):
         token = self.api.auth.login_and_get_token(self.creds)
@@ -47,14 +116,71 @@ class User:
 
         return token
 
-    def get_user(self, locator, expected_status=200):
+    @overload
+    def get_user(
+            self,
+            locator,
+            expected_status: int = 200,
+            *,
+            response_model: Type[T]
+    ) -> T:
+        ...
+
+    @overload
+    def get_user(
+            self,
+            locator,
+            expected_status: int = 200,
+            *,
+            response_model: None = None
+    ) -> requests.Response:
+        ...
+
+    def get_user(
+            self,
+            locator,
+            expected_status: int = 200,
+            *,
+            response_model: Type[T] | None = None
+    ):
         return self.api.users.get_user(
             locator,
-            expected_status=expected_status
+            expected_status=expected_status,
+            response_model=response_model
         )
 
-    def create_user(self, payload, expected_status=201):
-        return self.api.users.create_user(payload, expected_status=expected_status)
+    @overload
+    def create_user(
+            self,
+            payload,
+            expected_status: int = 201,
+            *,
+            response_model: Type[T]
+    ) -> T:
+        ...
+
+    @overload
+    def create_user(
+            self,
+            payload,
+            expected_status: int = 201,
+            *,
+            response_model: None = None
+    ) -> requests.Response:
+        ...
+
+    def create_user(
+            self,
+            payload,
+            expected_status: int = 201,
+            *,
+            response_model: Type[T] | None = None
+    ):
+        return self.api.users.create_user(
+            payload,
+            expected_status=expected_status,
+            response_model=response_model
+        )
 
     def delete(self):
         return self.api.users.delete_user(self.id)

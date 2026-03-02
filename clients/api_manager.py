@@ -15,19 +15,5 @@ class ApiManager:
         self.users = UserApi(session)
         self.movies = MoviesApi(session)
 
-    def authenticate(self, user):
-        """
-        Регистрирует пользователя (если нужно) и авторизует сессию.
-        """
-        login_data = {
-            'email': user['email'],
-            'password': user['_password'],
-        }
-        token = self.auth.login_and_get_token(login_data)
-
-        self.session.headers.update({
-            'Authorization': f'Bearer {token}'
-        })
-
     def close_session(self):
         self.session.close()
