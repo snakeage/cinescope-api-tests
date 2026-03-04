@@ -7,6 +7,7 @@ from assertions.movies_assertions import (
     assert_not_found,
     assert_unauthorized,
 )
+from db.queries import get_movies_by_ids
 from entities.movie import Movie
 from models.movie_models import MovieResponse, MoviesListResponse
 from utils.movie_payloads import MovieDataGenerator
@@ -234,3 +235,19 @@ def test_delete_movie_role_based_access(
 
     if expected_status == 200:
         super_admin.api.movies.get_movie(movie.id, expected_status=404)
+
+def test_api_movies_published_consistent_with_db(unauthorized_movies, db_session):
+    api_resp = unauthorized_movies.get_movies(
+        published=True,
+        page=1,
+        page_size=20,
+        response_model=MoviesListResponse
+    )
+
+    api_ids = [movie.id for movie in api_resp.movies]
+    db_rows = get_movies_by_ids(db_session, api_ids)
+    db_map = {row["id"]: row["published"] for row in db_rows}
+
+    assert len(db_map) == len(api_ids), "Часть фильмов из API не найдена в БД"
+    for movie_id in api_ids:
+        assert db_map[movie_id] is True, f"Фильм {movie_id} в БД не published"

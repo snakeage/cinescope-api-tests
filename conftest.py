@@ -3,6 +3,7 @@ import requests
 
 from clients.api_manager import ApiManager
 from constants.roles import Roles
+from db.engine import get_db_session
 from entities.movie import Movie
 from entities.user import User
 from models.admin_models import AdminCreateUserResponse
@@ -159,3 +160,11 @@ def created_movie(movie, movie_data):
     movie.create(movie_data, response_model=MovieResponse)
 
     return movie
+
+@pytest.fixture
+def db_session():
+    session = get_db_session()
+    try:
+        yield session
+    finally:
+        session.close()
