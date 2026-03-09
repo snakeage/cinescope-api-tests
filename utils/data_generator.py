@@ -7,7 +7,6 @@ faker = Faker()
 
 
 class DataGenerator:
-
     @staticmethod
     def generate_random_email():
         random_string_length = random.randint(4, 32)
@@ -37,8 +36,8 @@ class DataGenerator:
         lat_lower = string.ascii_lowercase
         lat_upper = string.ascii_uppercase
 
-        cyr_lower = "абвгдежзийклмнопрстуфхцчшщъыьэюя"
-        cyr_upper = "АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
+        cyr_lower = 'абвгдежзийклмнопрстуфхцчшщъыьэюя'
+        cyr_upper = 'АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ'
 
         digits = string.digits
         special = r"""?@#$%^&*_-+()[]{}><\/|"\'.,:;"""

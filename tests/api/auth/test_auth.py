@@ -1,23 +1,20 @@
 import pytest
 
-from assertions.auth_assertions import assert_login_failed, assert_get_user_forbidden
+from assertions.auth_assertions import assert_get_user_forbidden, assert_login_failed
 from constants.roles import Roles
 from models.admin_models import AdminCreateUserResponse
 from models.get_user_models import GetUserResponse
 from models.login_models import LoginResponse
 from models.register_models import RegisterUserResponse
 from utils.data_generator import DataGenerator
-from utils.user_payloads import generate_register_payload, generate_admin_user_payload
+from utils.user_payloads import generate_admin_user_payload, generate_register_payload
 
 
 class TestAuthApi:
     def test_register_user(self, auth_api):
         payload, _ = generate_register_payload()
 
-        user = auth_api.register_user(
-            payload,
-            response_model=RegisterUserResponse
-        )
+        user = auth_api.register_user(payload, response_model=RegisterUserResponse)
 
         assert user.email == payload.email
         assert user.full_name == payload.full_name
@@ -29,15 +26,9 @@ class TestAuthApi:
 
         auth_api.register_user(payload)
 
-        login_data = {
-            'email': payload.email,
-            'password': password
-        }
+        login_data = {'email': payload.email, 'password': password}
 
-        login = auth_api.login(
-            login_data,
-            response_model=LoginResponse
-        )
+        login = auth_api.login(login_data, response_model=LoginResponse)
 
         assert login.user.email == payload.email
         assert Roles.USER in login.user.roles
@@ -48,11 +39,9 @@ class TestAuthApi:
 
         auth_api.register_user(payload)
 
-        resp = auth_api.login({
-            'email': payload.email,
-            'password': f'{password}_WRONG_PASSWORD'
-        },
-            expected_status=401)
+        resp = auth_api.login(
+            {'email': payload.email, 'password': f'{password}_WRONG_PASSWORD'}, expected_status=401
+        )
 
         assert_login_failed(resp)
 
@@ -95,10 +84,7 @@ class TestAuthApi:
 
     @pytest.mark.slow
     def test_super_admin_can_get_user(self, super_admin, common_user):
-        user = super_admin.get_user(
-            common_user.id,
-            response_model=GetUserResponse
-        )
+        user = super_admin.get_user(common_user.id, response_model=GetUserResponse)
 
         assert user.email == common_user.email
         assert [r.value for r in user.roles] == common_user.roles
@@ -106,10 +92,7 @@ class TestAuthApi:
     def test_create_user(self, super_admin):
         payload, _ = generate_admin_user_payload()
 
-        user = super_admin.create_user(
-            payload,
-            response_model=AdminCreateUserResponse
-        )
+        user = super_admin.create_user(payload, response_model=AdminCreateUserResponse)
 
         assert user.email == payload.email
         assert user.full_name == payload.full_name

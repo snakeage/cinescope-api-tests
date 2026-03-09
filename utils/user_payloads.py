@@ -9,10 +9,7 @@ def generate_register_payload():
     password = DataGenerator.generate_random_password()
 
     model = RegisterUserRequest(
-        email=email,
-        full_name=full_name,
-        password=password,
-        password_repeat=password
+        email=email, full_name=full_name, password=password, password_repeat=password
     )
     return model, password
 
@@ -23,10 +20,6 @@ def generate_admin_user_payload():
     password = DataGenerator.generate_random_password()
 
     model = AdminCreateUserRequest(
-        email=email,
-        full_name=full_name,
-        password=password,
-        verified=True,
-        banned=False
+        email=email, full_name=full_name, password=password, verified=True, banned=False
     )
     return model, password

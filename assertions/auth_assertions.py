@@ -11,7 +11,7 @@ def assert_login_failed(response):
     assert isinstance(data.message, str)
     assert data.message
 
-    assert 'accessToken' not in response.json(), "Токен не должен выдаваться"
+    assert 'accessToken' not in response.json(), 'Токен не должен выдаваться'
 
     return data
 
