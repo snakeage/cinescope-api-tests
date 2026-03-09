@@ -16,7 +16,7 @@ pytestmark = pytest.mark.api
 
 
 class TestMoviesApi:
-    @pytest.mark.smoke
+    @pytest.mark.smoke_stable
     @pytest.mark.regression
     def test_get_movies(self, unauthorized_movies):
         data = unauthorized_movies.get_movies(response_model=MoviesListResponse)
@@ -74,7 +74,7 @@ class TestMoviesApi:
 
         assert_bad_request(resp)
 
-    @pytest.mark.smoke
+    @pytest.mark.smoke_integration
     @pytest.mark.regression
     def test_create_movie(self, movie, movie_data):
         created = movie.create(movie_data, response_model=MovieResponse)
@@ -99,7 +99,7 @@ class TestMoviesApi:
 
         assert_conflict(resp)
 
-    @pytest.mark.smoke
+    @pytest.mark.smoke_integration
     @pytest.mark.regression
     def test_get_movie(self, created_movie):
         got = created_movie.get(response_model=MovieResponse)

@@ -5,7 +5,7 @@ from db.queries import get_movies_count, get_published_movies
 
 
 class TestMoviesDb:
-    @pytest.mark.smoke
+    @pytest.mark.smoke_integration
     @pytest.mark.regression
     @pytest.mark.db
     def test_db_connection_healthcheck(self, db_session):
