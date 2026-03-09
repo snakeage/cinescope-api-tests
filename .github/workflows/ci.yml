@@ -31,3 +31,6 @@ jobs:
 
       - name: Collect tests
         run: pytest --collect-only -q
+
+      - name: Run smoke tests
+        run: pytest -m "smoke and not db" -q
