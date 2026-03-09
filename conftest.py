@@ -60,22 +60,15 @@ def user_factory(user_session, super_admin):
     created_users = []
 
     def _create_user(role: Roles):
-
         api = user_session()
 
         payload, password = generate_admin_user_payload()
 
         created_user = super_admin.api.users.create_user(
-            payload,
-            response_model=AdminCreateUserResponse
+            payload, response_model=AdminCreateUserResponse
         )
 
-        user = User(
-            email=payload.email,
-            password=password,
-            roles=[role.value],
-            api=api
-        )
+        user = User(email=payload.email, password=password, roles=[role.value], api=api)
 
         user.id = str(created_user.id)
         user.full_name = created_user.full_name
@@ -160,6 +153,7 @@ def created_movie(movie, movie_data):
     movie.create(movie_data, response_model=MovieResponse)
 
     return movie
+
 
 @pytest.fixture
 def db_session():

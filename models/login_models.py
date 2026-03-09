@@ -12,10 +12,7 @@ class LoginUser(BaseModel):
     full_name: str
     roles: list[Roles]
 
-    model_config = ConfigDict(
-        populate_by_name=True,
-        alias_generator=to_camel_case
-    )
+    model_config = ConfigDict(populate_by_name=True, alias_generator=to_camel_case)
 
 
 class LoginResponse(BaseModel):
@@ -24,7 +21,4 @@ class LoginResponse(BaseModel):
     refresh_token: UUID
     expires_in: int  # у тебя сейчас epoch в ms
 
-    model_config = ConfigDict(
-        populate_by_name=True,
-        alias_generator=to_camel_case
-    )
+    model_config = ConfigDict(populate_by_name=True, alias_generator=to_camel_case)

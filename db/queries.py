@@ -5,10 +5,12 @@ from db.engine import engine
 
 def db_healthcheck() -> int:
     with engine.connect() as conn:
-        return conn.execute(text("SELECT 1")).scalar_one()
+        return conn.execute(text('SELECT 1')).scalar_one()
+
 
 def get_movies_count(session) -> int:
     return session.execute(text('SELECT COUNT(*) FROM movies')).scalar_one()
+
 
 def get_published_movies(session, limit: int = 10):
     query = text("""
@@ -18,8 +20,9 @@ def get_published_movies(session, limit: int = 10):
         ORDER BY id DESC
         LIMIT :limit
     """)
-    rows = session.execute(query, {"limit": limit}).mappings().all()
+    rows = session.execute(query, {'limit': limit}).mappings().all()
     return rows
+
 
 def get_movies_by_ids(session, movie_ids: list[int]):
     query = text("""
@@ -27,4 +30,4 @@ def get_movies_by_ids(session, movie_ids: list[int]):
         FROM movies
         WHERE id = ANY(:movie_ids)
     """)
-    return session.execute(query, {"movie_ids": movie_ids}).mappings().all()
+    return session.execute(query, {'movie_ids': movie_ids}).mappings().all()

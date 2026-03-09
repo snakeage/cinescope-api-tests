@@ -1,8 +1,7 @@
 import json
 import logging
 import os
-from typing import Type, overload
-from typing import TypeVar
+from typing import Type, TypeVar, overload
 
 import requests
 from pydantic import BaseModel
@@ -14,6 +13,7 @@ T = TypeVar('T', bound=BaseModel)
 
 class UnexpectedStatusCode(Exception):
     """Выбрасывается, когда статус ответа не совпадает с ожидаемым."""
+
     pass
 
 
@@ -25,9 +25,9 @@ class CustomRequester:
 
     def __init__(self, session: requests.Session, base_url: str):
         """
-       Кастомный реквестер для стандартизации и упрощения отправки HTTP-запросов.
-       Инкапсулирует работу с requests, логирование и проверку статус-кодов.
-       """
+        Кастомный реквестер для стандартизации и упрощения отправки HTTP-запросов.
+        Инкапсулирует работу с requests, логирование и проверку статус-кодов.
+        """
         self.session = session
         self.base_url = base_url.rstrip('/')
         self.session.headers.update(HEADERS)
@@ -36,47 +36,44 @@ class CustomRequester:
 
     @overload
     def send_request(
-            self,
-            method: str,
-            endpoint: str,
-            data=None,
-            params=None,
-            expected_status=200,
-            need_logging: bool = True,
-            timeout: int = 15,
-            *,
-            response_model: Type[T],
-    ) -> T:
-        ...
+        self,
+        method: str,
+        endpoint: str,
+        data=None,
+        params=None,
+        expected_status=200,
+        need_logging: bool = True,
+        timeout: int = 15,
+        *,
+        response_model: Type[T],
+    ) -> T: ...
 
     @overload
     def send_request(
-            self,
-            method: str,
-            endpoint: str,
-            data=None,
-            params=None,
-            expected_status=200,
-            need_logging: bool = True,
-            timeout: int = 15,
-            *,
-            response_model: None = None,
-    ) -> requests.Response:
-        ...
+        self,
+        method: str,
+        endpoint: str,
+        data=None,
+        params=None,
+        expected_status=200,
+        need_logging: bool = True,
+        timeout: int = 15,
+        *,
+        response_model: None = None,
+    ) -> requests.Response: ...
 
     def send_request(
-            self,
-            method: str,
-            endpoint: str,
-            data=None,
-            params=None,
-            expected_status=200,
-            need_logging: bool = True,
-            timeout: int = 15,
-            *,
-            response_model: Type[T] | None = None,
+        self,
+        method: str,
+        endpoint: str,
+        data=None,
+        params=None,
+        expected_status=200,
+        need_logging: bool = True,
+        timeout: int = 15,
+        *,
+        response_model: Type[T] | None = None,
     ):
-
         url = f'{self.base_url}{endpoint}'
 
         if isinstance(data, BaseModel):
@@ -100,8 +97,8 @@ class CustomRequester:
 
         if not ok:
             raise UnexpectedStatusCode(
-                f"{method.upper()} {url} -> {response.status_code}, "
-                f"expected {expected_status}\n{response.text}"
+                f'{method.upper()} {url} -> {response.status_code}, '
+                f'expected {expected_status}\n{response.text}'
             )
 
         if response_model is not None:
@@ -128,33 +125,33 @@ class CustomRequester:
         try:
             request = response.request
 
-            GREEN = "\033[32m"
-            RED = "\033[31m"
-            RESET = "\033[0m"
+            GREEN = '\033[32m'
+            RED = '\033[31m'
+            RESET = '\033[0m'
 
-            headers = " \\\n".join(
-                [f"-H '{h}: {v}'" for h, v in request.headers.items()]
+            headers = ' \\\n'.join([f"-H '{h}: {v}'" for h, v in request.headers.items()])
+
+            full_test_name = (
+                f'pytest {os.environ.get("PYTEST_CURRENT_TEST", "").replace(" (call)", "")}'
             )
 
-            full_test_name = f"pytest {os.environ.get('PYTEST_CURRENT_TEST', '').replace(' (call)', '')}"
-
-            body = ""
-            if hasattr(request, "body") and request.body:
+            body = ''
+            if hasattr(request, 'body') and request.body:
                 if isinstance(request.body, bytes):
-                    body_str = request.body.decode("utf-8")
+                    body_str = request.body.decode('utf-8')
                 else:
                     body_str = str(request.body)
 
-                if body_str != "{}":
+                if body_str != '{}':
                     body = f"-d '{body_str}' \n"
 
             # REQUEST
-            self.logger.info(f"\n{'=' * 40} REQUEST {'=' * 40}")
+            self.logger.info(f'\n{"=" * 40} REQUEST {"=" * 40}')
             self.logger.info(
-                f"{GREEN}{full_test_name}{RESET}\n"
+                f'{GREEN}{full_test_name}{RESET}\n'
                 f"curl -X {request.method} '{request.url}' \\\n"
-                f"{headers} \\\n"
-                f"{body}"
+                f'{headers} \\\n'
+                f'{body}'
             )
 
             # RESPONSE
@@ -171,19 +168,18 @@ class CustomRequester:
             except json.JSONDecodeError:
                 pass
 
-            self.logger.info(f"\n{'=' * 40} RESPONSE {'=' * 40}")
+            self.logger.info(f'\n{"=" * 40} RESPONSE {"=" * 40}')
             if not is_success:
                 self.logger.info(
-                    f"\tSTATUS_CODE: {RED}{response_status}{RESET}\n"
-                    f"\tDATA: {RED}{response_data}{RESET}"
+                    f'\tSTATUS_CODE: {RED}{response_status}{RESET}\n'
+                    f'\tDATA: {RED}{response_data}{RESET}'
                 )
             else:
                 self.logger.info(
-                    f"\tSTATUS_CODE: {GREEN}{response_status}{RESET}\n"
-                    f"\tDATA:\n{response_data}"
+                    f'\tSTATUS_CODE: {GREEN}{response_status}{RESET}\n\tDATA:\n{response_data}'
                 )
 
-            self.logger.info(f"{'=' * 80}\n")
+            self.logger.info(f'{"=" * 80}\n')
 
         except Exception as e:
-            self.logger.error(f"\nLogging failed: {type(e)} - {e}")
+            self.logger.error(f'\nLogging failed: {type(e)} - {e}')

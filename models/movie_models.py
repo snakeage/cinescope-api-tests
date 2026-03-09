@@ -14,10 +14,7 @@ class MovieResponse(BaseModel):
     published: StrictBool
     created_at: datetime
 
-    model_config = ConfigDict(
-        populate_by_name=True,
-        alias_generator=to_camel_case
-    )
+    model_config = ConfigDict(populate_by_name=True, alias_generator=to_camel_case)
 
 
 class MoviesListResponse(BaseModel):
@@ -25,7 +22,4 @@ class MoviesListResponse(BaseModel):
     page: int
     page_size: int
 
-    model_config = ConfigDict(
-        populate_by_name=True,
-        alias_generator=to_camel_case
-    )
+    model_config = ConfigDict(populate_by_name=True, alias_generator=to_camel_case)

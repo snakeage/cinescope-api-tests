@@ -6,7 +6,6 @@ faker = Faker()
 
 
 class MovieDataGenerator:
-
     @staticmethod
     def movie_payload(**overrides):
         payload = {
