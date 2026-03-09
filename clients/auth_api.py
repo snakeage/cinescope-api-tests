@@ -54,7 +54,24 @@ class AuthApi(CustomRequester):
             response_model=response_model,
         )
 
+    @overload
+    def login_for_setup(self, login_data, *, response_model: Type[T]) -> T: ...
+
+    @overload
+    def login_for_setup(self, login_data, *, response_model: None = None) -> requests.Response: ...
+
+    # TODO: remove after backend fixes /login status to stable 200 (now it may return 201).
+    def login_for_setup(self, login_data, *, response_model: Type[T] | None = None):
+        return self.send_request(
+            method='POST',
+            endpoint=LOGIN_ENDPOINT,
+            data=login_data,
+            expected_status=(200, 201),
+            response_model=response_model,
+        )
+
     def login_and_get_token(self, login_data) -> str:
-        login_response = self.login(login_data, response_model=LoginResponse)
+        # TODO: switch back to self.login(...) after backend fixes /login status to 200.
+        login_response = self.login_for_setup(login_data, response_model=LoginResponse)
 
         return login_response.access_token
