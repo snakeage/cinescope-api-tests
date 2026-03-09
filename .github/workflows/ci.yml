@@ -34,3 +34,10 @@ jobs:
 
       - name: Run stable smoke tests
         run: pytest -m smoke_stable -q
+
+      - name: Upload allure results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results
+          path: allure-results
