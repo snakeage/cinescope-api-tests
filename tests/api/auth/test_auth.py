@@ -25,7 +25,6 @@ class TestAuthApi:
         assert Roles.USER in user.roles
         assert user.verified is True
 
-    @pytest.mark.smoke
     @pytest.mark.regression
     def test_login_user(self, auth_api):
         payload, password = generate_register_payload()
