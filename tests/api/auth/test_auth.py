@@ -13,7 +13,7 @@ pytestmark = pytest.mark.api
 
 
 class TestAuthApi:
-    @pytest.mark.smoke
+    @pytest.mark.smoke_integration
     @pytest.mark.regression
     def test_register_user(self, auth_api):
         payload, _ = generate_register_payload()
@@ -25,6 +25,7 @@ class TestAuthApi:
         assert Roles.USER in user.roles
         assert user.verified is True
 
+    @pytest.mark.smoke_integration
     @pytest.mark.regression
     def test_login_user(self, auth_api):
         payload, password = generate_register_payload()
