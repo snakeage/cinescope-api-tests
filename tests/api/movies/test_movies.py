@@ -245,3 +245,23 @@ def test_api_movies_published_consistent_with_db(unauthorized_movies, db_session
     assert len(db_map) == len(api_ids), 'Часть фильмов из API не найдена в БД'
     for movie_id in api_ids:
         assert db_map[movie_id] is True, f'Фильм {movie_id} в БД не published'
+
+
+@pytest.mark.regression
+@pytest.mark.parametrize(
+    'locations',
+    [['MSK'], ['SPB'], ['MSK', 'SPB']],
+    ids=['location: MSK', 'location: SPB', 'location: [MSK, SPB]'],
+)
+def test_get_movies_location_filter(unauthorized_movies, locations):
+    data = unauthorized_movies.get_movies(
+        locations=locations,
+        response_model=MoviesListResponse,
+    )
+
+    movies = data.movies
+
+    for movie in movies:
+        assert movie.location in locations
+
+    assert movies
