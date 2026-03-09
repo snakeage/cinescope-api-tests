@@ -1,192 +1,106 @@
-# 🎬 Cinescope API Test Framework
+# Cinescope API Test Framework
 
-Автоматизированные API-тесты для сервиса Cinescope.
+Автотесты для API сервиса Cinescope (auth, users, movies + базовые DB-проверки).
 
-Проект реализует тестирование REST API (аутентификация, пользователи, фильмы) с акцентом на архитектуру, изоляцию тестов
-и готовность к интеграции в CI/CD.
-
----
-
-## 🧱 Технологический стек
-
-- Python 3.11+
+## Stack
+- Python 3.11
 - Pytest
 - Requests
-- Faker
-- Pydantic
-- python-dotenv
-- Allure (опционально)
-- HTTP-логирование
+- Pydantic v2
+- SQLAlchemy + psycopg2
+- pre-commit, Ruff, mypy
+- Allure (`allure-results`)
 
----
-
-## 🏗 Архитектура проекта
-
+## Project Structure
 ```text
-clients/       # API-клиенты (AuthApi, UserApi, MoviesApi)
-entities/      # Доменные обертки (User, Movie)
-models/        # Pydantic request/response модели
-assertions/    # Ошибочные контракты и бизнес-проверки
-utils/         # Генераторы данных и payload'ы
-tests/         # API/UI тесты
-conftest.py    # Фикстуры и lifecycle management
+clients/            # HTTP API clients
+custom_requester/   # общий sender + status/code checks + логирование
+entities/           # доменные обертки (User, Movie)
+models/             # Pydantic request/response модели
+assertions/         # проверки error-контрактов и бизнес-ожиданий
+db/                 # engine, session, SQL queries
+tests/api/          # API тесты
+tests/db/           # DB тесты
 ```
 
----
-
-## 🧠 Архитектурные принципы
-
-- Централизованный `ApiManager`
-- Разделение клиентов по доменам
-- Yield-фикстуры для управления жизненным циклом данных
-- Изоляция тестов через уникальные данные
-- Минимизация зависимостей между тестами
-- Готовность к параллельному запуску
-- Pydantic-first: позитивные ответы валидируются через `response_model`
-- Error-contract для негативных сценариев через единую `ErrorResponse`
-
----
-
-## ⚙️ Установка
-
+## Quick Start
 ```bash
 python -m venv .venv
-source .venv/bin/activate  # Mac/Linux
+source .venv/bin/activate
 python -m pip install -r requirements.txt
 ```
 
-### ▶ Запуск тестов
+## Environment Variables
+Обязательные:
+- `SUPER_ADMIN_USERNAME`
+- `SUPER_ADMIN_PASSWORD`
 
-Запуск всех тестов:
+API endpoints (по умолчанию уже заданы, можно переопределить):
+- `AUTH_BASE_URL`
+- `API_BASE_URL`
 
-python -m pytest -v
+DB (для `tests/db`):
+- `DB_MOVIES_HOST`
+- `DB_MOVIES_PORT`
+- `DB_MOVIES_NAME`
+- `DB_MOVIES_USERNAME`
+- `DB_MOVIES_PASSWORD`
 
-С выводом логов:
-
-python -m pytest -v -s
-
-Запуск конкретного теста:
-
-python -m pytest tests/api/auth/test_auth.py::TestAuthApi::test_register_user
-
-## 🔐 Авторизация и тестовые данные
-
-Пользователи создаются динамически (уникальные email).
-
-Для операций с фильмами используется super-admin аккаунт.
-
-Cleanup выполняется через yield-фикстуры (где требуется).
-
-Тесты не зависят друг от друга.
-
-Тесты можно запускать многократно без ручной подготовки данных.
-
-## ✅ Контракты API
-
-- Позитивные сценарии (`200/201`) валидируются через Pydantic-модели в `models/`.
-- Негативные сценарии (`400/401/403/404/409`) валидируются через `ErrorResponse`.
-- HTTP статус-коды проверяются в `CustomRequester`, структура ответа проверяется моделями/ассертами.
-
-## 🧪 Покрываемые сценарии
-
-Auth
-Регистрация пользователя
-
-Логин (позитивный сценарий)
-
-Логин с неверным паролем
-
-Логин с несуществующим email
-
-Логин с пустым телом запроса
-
-Movies
-Создание фильма
-
-Получение фильма
-
-Удаление фильма
-
-Проверка бизнес-ограничений
-
-## 🔐 RBAC тестирование
-
-Проверяется ролевая модель доступа:
-
-- SUPER_ADMIN — разрешён доступ к управлению фильмами
-- USER — ограниченный доступ
-- Unauthorized — доступ запрещён
-
-Ролевые проверки реализованы через параметризованные тесты.
-
-## 📊 Логирование
-
-Проект поддерживает логирование HTTP-запросов:
-
-HTTP method
-
-URL
-
-Headers
-
-Request body
-
-Status code
-
-Response body
-
-Это упрощает анализ падений и отладку.
-
-## 🚀 CI-ready
-
-Фреймворк спроектирован с учетом:
-
-Параллельного запуска тестов
-
-Масштабирования тестового набора
-
-Изоляции тестовых данных
-
-Интеграции в CI/CD pipeline
-
-## 🌍 Переменные окружения
-
-Для работы тестов требуется:
-
-- SUPER_ADMIN_USERNAME
-- SUPER_ADMIN_PASSWORD
-
-Можно задать через `.env` или системные переменные.
-
-## 📦 Актуализация зависимостей
-
-В проекте используются 2 файла зависимостей:
-
-- `requirements.txt` — только прямые зависимости проекта (удобно поддерживать вручную).
-- `requirements.lock.txt` — полный снимок окружения (`pip freeze`) для воспроизводимого CI/регресса.
-
-Установка для локальной разработки:
-
+## Test Run
 ```bash
-python -m pip install -r requirements.txt
+python -m pytest
 ```
 
-Установка для CI/стабильного воспроизводимого прогона:
-
+Удобные команды через Makefile:
 ```bash
-python -m pip install -r requirements.lock.txt
+make lint
+make test
+make test-smoke
+make test-smoke-stable
+make test-smoke-integration
+make test-regression
+make test-negative
+make test-workflow
 ```
 
-Обновить lock-файл:
+## Markers
+Настроены в `pytest.ini`:
+- `smoke_stable` — стабильный smoke для PR CI
+- `smoke_integration` — smoke, зависящий от внешнего окружения
+- `regression`
+- `negative`
+- `workflow`
+- `api`
+- `db`
+- `slow`
 
+Посмотреть, какие тесты входят в маркер:
+```bash
+python -m pytest -m smoke_stable --collect-only -q
+python -m pytest -m smoke_integration --collect-only -q
+```
+
+## Response Validation Approach
+- Позитивные ответы валидируются через Pydantic `response_model`.
+- Негативные ответы валидируются через `ErrorResponse` и assertions.
+- HTTP status code проверяется централизованно в `CustomRequester`.
+
+## CI
+GitHub Actions workflow (`.github/workflows/ci.yml`) делает:
+1. Установка зависимостей
+2. `pre-commit run --all-files`
+3. `pytest --collect-only -q`
+4. `pytest -m smoke_stable -q`
+5. Upload `allure-results` artifact (`if: always()`)
+
+Это значит, что PR не блокируется из-за нестабильных интеграционных smoke.
+
+## Dependencies Policy
+Используются два файла:
+- `requirements.txt` — прямые зависимости проекта
+- `requirements.lock.txt` — полный lock (`pip freeze`) для воспроизводимых прогонов
+
+Обновить lock:
 ```bash
 .venv/bin/python -m pip freeze > requirements.lock.txt
 ```
-
-`freeze` стоит делать после добавления/обновления библиотек и перед коммитом, который меняет зависимости.
-
-## 📌 Требования
-
-Python 3.11+
-
-Доступ к тестовому окружению Cinescope
