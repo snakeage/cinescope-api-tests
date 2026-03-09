@@ -216,10 +216,19 @@ def test_delete_movie_role_based_access(
     movie = Movie(api=actor.api)
     movie.id = created_movie.id
 
-    movie.delete(expected_status=expected_status)
-
     if expected_status == 200:
-        super_admin.api.movies.get_movie(movie.id, expected_status=404)
+        deleted = movie.delete(
+            expected_status=200,
+            response_model=MovieResponse,
+        )
+        assert deleted.id == created_movie.id
+
+        super_admin.api.movies.get_movie(
+            movie.id,
+            expected_status=404,
+        )
+    else:
+        movie.delete(expected_status=expected_status)
 
 
 @pytest.mark.db
