@@ -25,9 +25,7 @@ tests/db/           # DB тесты
 
 ## Quick Start
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
+uv sync
 ```
 
 ## Environment Variables
@@ -48,7 +46,7 @@ DB (для `tests/db`):
 
 ## Test Run
 ```bash
-python -m pytest
+uv run pytest
 ```
 
 Удобные команды через Makefile:
@@ -76,8 +74,8 @@ make test-workflow
 
 Посмотреть, какие тесты входят в маркер:
 ```bash
-python -m pytest -m smoke_stable --collect-only -q
-python -m pytest -m smoke_integration --collect-only -q
+uv run pytest -m smoke_stable --collect-only -q
+uv run pytest -m smoke_integration --collect-only -q
 ```
 
 ## Response Validation Approach
@@ -96,11 +94,12 @@ GitHub Actions workflow (`.github/workflows/ci.yml`) делает:
 Это значит, что PR не блокируется из-за нестабильных интеграционных smoke.
 
 ## Dependencies Policy
-Используются два файла:
-- `requirements.txt` — прямые зависимости проекта
-- `requirements.lock.txt` — полный lock (`pip freeze`) для воспроизводимых прогонов
+Используются:
+- `pyproject.toml` — прямые зависимости проекта и настройки инструментов
+- `uv.lock` — полный lock для воспроизводимых прогонов
 
-Обновить lock:
+Обновить lock и окружение:
 ```bash
-.venv/bin/python -m pip freeze > requirements.lock.txt
+uv lock
+uv sync
 ```
