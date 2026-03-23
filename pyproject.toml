@@ -16,6 +16,8 @@ dependencies = [
   'pre-commit==4.3.0',
   'ruff==0.13.1',
   'mypy==1.18.2',
+  "playwright>=1.58.0",
+  "pytest-playwright>=0.7.2",
 ]
 
 [tool.uv]
