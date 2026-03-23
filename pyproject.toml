@@ -1,3 +1,26 @@
+[project]
+name = 'cinescope-api-tests'
+version = '0.1.0'
+requires-python = '>=3.11'
+dependencies = [
+  'pytest==9.0.2',
+  'allure-pytest==2.15.3',
+  'requests==2.32.5',
+  'Faker==40.1.2',
+  'pydantic==2.12.5',
+  'python-dotenv==1.2.1',
+  'email-validator==2.3.0',
+  'SQLAlchemy==2.0.47',
+  'psycopg2-binary==2.9.11',
+  'greenlet==3.3.2',
+  'pre-commit==4.3.0',
+  'ruff==0.13.1',
+  'mypy==1.18.2',
+]
+
+[tool.uv]
+package = false
+
 [tool.ruff]
 target-version = "py311"
 line-length = 100
