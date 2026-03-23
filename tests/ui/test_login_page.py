@@ -1,6 +1,8 @@
+import pytest
 from playwright.sync_api import expect
 
 
+@pytest.mark.ui
 def test_login_page_loads(page):
     page.goto('https://dev-cinescope.coconutqa.ru/login')
     assert page.url.startswith('https://dev-cinescope.coconutqa.ru/login')
