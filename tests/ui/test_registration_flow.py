@@ -6,7 +6,6 @@ def test_registration_flow(page, ui_base_url):
     registration_page = RegistrationPage(page)
 
     registration_page.open(ui_base_url)
-
     registration_page.expect_loaded()
 
     full_name = DataGenerator.generate_random_name()

@@ -12,6 +12,17 @@ class RegistrationPage:
 
     def expect_loaded(self):
         expect(self.page.get_by_role('heading', name='Регистрация', level=2)).to_be_visible()
+        expect(self.page.get_by_placeholder('Имя Фамилия Отчество')).to_be_visible()
+        expect(self.page.get_by_placeholder('Email')).to_be_visible()
+        expect(self.page.get_by_placeholder('Пароль', exact=True)).to_be_visible()
+        expect(self.page.get_by_placeholder('Повторите пароль')).to_be_visible()
+        expect(
+            self.page.locator('form').get_by_role(
+                'button',
+                name='Зарегистрироваться',
+            )
+        ).to_be_visible()
+        expect(self.page.locator('form').get_by_role('link', name='Войти')).to_be_visible()
 
     def fill_full_name(self, full_name):
         self.page.get_by_placeholder('Имя Фамилия Отчество').fill(full_name)
@@ -36,5 +47,8 @@ class RegistrationPage:
 
     def expect_signup_button_hidden(self):
         expect(
-            self.page.locator('form').get_by_role('button', name='Зарегистрироваться')
+            self.page.locator('form').get_by_role(
+                'button',
+                name='Зарегистрироваться',
+            )
         ).not_to_be_visible()
