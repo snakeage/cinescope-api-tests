@@ -1,3 +1,5 @@
+import os
+
 import pytest
 import requests
 
@@ -162,3 +164,11 @@ def db_session():
         yield session
     finally:
         session.close()
+
+
+@pytest.fixture(scope='session')
+def ui_base_url():
+    base_url = os.getenv('UI_BASE_URL')
+    if not base_url:
+        raise RuntimeError('UI_BASE_URL is not set')
+    return base_url
