@@ -1,27 +1,25 @@
-from playwright.sync_api import expect
-
+from pages.registration_page import RegistrationPage
 from utils.data_generator import DataGenerator
 
 
-def test_registration_flow(page):
-    page.goto('https://dev-cinescope.coconutqa.ru/register')
+def test_registration_flow(page, ui_base_url):
+    registration_page = RegistrationPage(page)
 
-    expect(page.get_by_role('heading', name='Регистрация', level=2)).to_be_visible()
+    registration_page.open(ui_base_url)
+    registration_page.expect_loaded()
 
     full_name = DataGenerator.generate_random_name()
-    page.get_by_placeholder('Имя Фамилия Отчество').fill(full_name)
+    registration_page.fill_full_name(full_name)
 
     email = DataGenerator.generate_random_email()
-    page.get_by_placeholder('Email').fill(email)
+    registration_page.fill_email(email)
 
     password = DataGenerator.generate_random_password()
-    page.get_by_placeholder('Пароль', exact=True).fill(password)
-    page.get_by_placeholder('Повторите пароль').fill(password)
+    registration_page.fill_password(password)
+    registration_page.fill_repeat_password(password)
 
-    page.locator('form').get_by_role('button', name='Зарегистрироваться').click()
+    registration_page.click_signup_btn()
 
-    expect(page).not_to_have_url('**/register')
-    expect(page.get_by_text('Подтвердите свою почту', exact=True)).to_be_visible()
-    expect(
-        page.locator('form').get_by_role('button', name='Зарегистрироваться')
-    ).not_to_be_visible()
+    registration_page.expect_url_changed()
+    registration_page.expect_confirmation_message_visible()
+    registration_page.expect_signup_button_hidden()
