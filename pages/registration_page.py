@@ -1,14 +1,10 @@
 from playwright.sync_api import expect
 
+from pages.base_page import BasePage
 
-class RegistrationPage:
+
+class RegistrationPage(BasePage):
     PATH = '/register'
-
-    def __init__(self, page):
-        self.page = page
-
-    def open(self, base_url):
-        self.page.goto(f'{base_url}{self.PATH}')
 
     def expect_loaded(self):
         expect(self.page.get_by_role('heading', name='Регистрация', level=2)).to_be_visible()
