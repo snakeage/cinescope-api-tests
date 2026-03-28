@@ -1,7 +1,11 @@
+import pytest
+
 from pages.registration_page import RegistrationPage
 from utils.data_generator import DataGenerator
 
 
+@pytest.mark.ui
+@pytest.mark.regression
 def test_registration_flow(page, ui_base_url):
     registration_page = RegistrationPage(page)
 
