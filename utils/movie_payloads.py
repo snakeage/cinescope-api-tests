@@ -15,7 +15,7 @@ class MovieDataGenerator:
             'description': faker.text(max_nb_chars=200),
             'location': random.choice(['MSK', 'SPB']),
             'published': random.choice([True, False]),
-            'genreId': random.randint(1, 5),
+            'genreId': random.choice([1, 2, 3, 4]),
         }
 
         payload.update(overrides)

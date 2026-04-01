@@ -9,10 +9,12 @@ from db.engine import get_db_session
 from entities.movie import Movie
 from entities.user import User
 from models.admin_models import AdminCreateUserResponse
+from models.login_models import LoginResponse
 from models.movie_models import MovieResponse
+from models.register_models import RegisterUserResponse
 from resources.user_creds import SuperAdminCreds
 from utils.movie_payloads import MovieDataGenerator
-from utils.user_payloads import generate_admin_user_payload
+from utils.user_payloads import generate_admin_user_payload, generate_register_payload
 
 
 @pytest.fixture
@@ -96,6 +98,30 @@ def common_user(user_factory):
 
 
 @pytest.fixture
+def ui_user(api):
+    payload, password = generate_register_payload()
+    created_user = api.auth.register_user(payload, response_model=RegisterUserResponse)
+
+    user = User(
+        email=payload.email,
+        password=password,
+        roles=[Roles.USER.value],
+        api=api,
+    )
+    user.id = str(created_user.id)
+    user.full_name = created_user.full_name
+    user.verified = created_user.verified
+    user.authenticate()
+
+    yield user
+
+    try:
+        user.delete()
+    except Exception:
+        pass
+
+
+@pytest.fixture
 def unauthorized_api(user_session):
     return user_session()
 
@@ -172,3 +198,33 @@ def ui_base_url():
     if not base_url:
         raise RuntimeError('UI_BASE_URL is not set')
     return base_url
+
+
+@pytest.fixture
+def ui_authorized_page(page, ui_user):
+    login_response = ui_user.login(response_model=LoginResponse)
+
+    page.context.add_cookies(
+        [
+            {
+                'name': 'refresh_token',
+                'value': str(login_response.refresh_token),
+                'domain': 'dev-cinescope.coconutqa.ru',
+                'path': '/',
+                'httpOnly': True,
+                'secure': True,
+                'sameSite': 'Lax',
+            },
+            {
+                'name': 'refresh_token',
+                'value': str(login_response.refresh_token),
+                'domain': 'auth.dev-cinescope.coconutqa.ru',
+                'path': '/',
+                'httpOnly': True,
+                'secure': True,
+                'sameSite': 'Lax',
+            },
+        ]
+    )
+
+    return page
