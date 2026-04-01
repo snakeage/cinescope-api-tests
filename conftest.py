@@ -9,6 +9,7 @@ from db.engine import get_db_session
 from entities.movie import Movie
 from entities.user import User
 from models.admin_models import AdminCreateUserResponse
+from models.login_models import LoginResponse
 from models.movie_models import MovieResponse
 from resources.user_creds import SuperAdminCreds
 from utils.movie_payloads import MovieDataGenerator
@@ -172,3 +173,33 @@ def ui_base_url():
     if not base_url:
         raise RuntimeError('UI_BASE_URL is not set')
     return base_url
+
+
+@pytest.fixture
+def ui_authorized_page(page, common_user, ui_base_url):
+    login_response = common_user.login(response_model=LoginResponse)
+
+    page.context.add_cookies(
+        [
+            {
+                'name': 'refresh_token',
+                'value': str(login_response.refresh_token),
+                'domain': 'dev-cinescope.coconutqa.ru',
+                'path': '/',
+                'httpOnly': True,
+                'secure': True,
+                'sameSite': 'Lax',
+            },
+            {
+                'name': 'refresh_token',
+                'value': str(login_response.refresh_token),
+                'domain': 'auth.dev-cinescope.coconutqa.ru',
+                'path': '/',
+                'httpOnly': True,
+                'secure': True,
+                'sameSite': 'Lax',
+            },
+        ]
+    )
+
+    return page
